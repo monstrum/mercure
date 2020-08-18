@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+    "io/ioutil"
+    "bytes"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -144,8 +146,17 @@ func validateJWT(encodedToken string, key []byte, signingAlgorithm jwt.SigningMe
 		case *jwt.SigningMethodHMAC:
 			return key, nil
 		case *jwt.SigningMethodRSA:
-			block, _ := pem.Decode(key)
+		    var rsaKey []byte = key
+            isFile := bytes.HasPrefix(key, []byte("file://"))
+            if isFile {
+                key, err := ioutil.ReadFile("/public.key")
+                if err != nil {
+				    return nil, err
+                }
+                rsaKey = key
+            }
 
+            block, _ := pem.Decode(rsaKey)
 			if block == nil {
 				return nil, ErrPublicKey
 			}
